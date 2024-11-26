@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -15,6 +16,7 @@ func TestConcurrentRequests(t *testing.T) {
 			t.Error(err)
 			return
 		}
+		req.Header.Set("API_KEY", fmt.Sprintf(`my-api-key=%d`, i+1))
 
 		client := &http.Client{}
 		resp, err := client.Do(req)

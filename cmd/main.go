@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
@@ -17,7 +18,12 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Fprintln(w, "Vamos rate limiter!!!", "\n", IPRequisicao, "\n", obterTokenRequest(r))
+		ratelimiter := NewRateLimiter(&ipRequest{})
+		ratelimiter.Controlar(IPRequisicao)
+
+		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))
+		fmt.Println(IPRequisicao, "\n", obterTokenRequest(r))
+
 	})
 	http.ListenAndServe(":8080", nil)
 }
