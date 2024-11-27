@@ -1,6 +1,6 @@
 package ratelimiter
 
-type ControlaRateLimit interface {
+type ControlaCache interface {
 	gravar(registro string) error
 	contem(registro string) bool
 }

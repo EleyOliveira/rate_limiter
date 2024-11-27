@@ -20,9 +20,9 @@ func main() {
 			panic(err)
 		}
 
-		ipRequest := &ratelimiter.IPRequest{}
+		registro := &ratelimiter.CacheRegistro{}
 
-		ratelimiter := ratelimiter.NewRateLimiter(ipRequest)
+		ratelimiter := ratelimiter.NewRateLimiter(registro)
 		ratelimiter.Controlar(IPRequisicao)
 
 		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))

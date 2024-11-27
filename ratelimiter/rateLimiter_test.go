@@ -8,7 +8,7 @@ import (
 
 func TestGravarRegistro(t *testing.T) {
 
-	ipRequest := &IPRequest{}
+	ipRequest := &CacheRegistro{}
 
 	ratelimiter := NewRateLimiter(ipRequest)
 	ratelimiter.Controlar("175.890.789.123")
