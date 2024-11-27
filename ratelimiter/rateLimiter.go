@@ -1,4 +1,4 @@
-package main
+package ratelimiter
 
 type RateLimiter struct {
 	controlaRateLimit ControlaRateLimit

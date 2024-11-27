@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+
+	"github.com/EleyOliveira/rate_limiter/ratelimiter"
 )
 
 func main() {
@@ -18,7 +20,9 @@ func main() {
 			panic(err)
 		}
 
-		ratelimiter := NewRateLimiter(&ipRequest{})
+		ipRequest := &ratelimiter.IPRequest{}
+
+		ratelimiter := ratelimiter.NewRateLimiter(ipRequest)
 		ratelimiter.Controlar(IPRequisicao)
 
 		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))

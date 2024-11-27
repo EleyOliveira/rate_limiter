@@ -1,4 +1,4 @@
-package main
+package ratelimiter
 
 type ControlaRateLimit interface {
 	gravar(registro string) error

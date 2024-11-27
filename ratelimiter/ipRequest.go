@@ -1,10 +1,10 @@
-package main
+package ratelimiter
 
-type ipRequest struct {
+type IPRequest struct {
 	IPRequests []string
 }
 
-func (i *ipRequest) gravar(registro string) error {
+func (i *IPRequest) gravar(registro string) error {
 
 	if len(i.IPRequests) == 0 || !i.contem(registro) {
 		i.IPRequests = append(i.IPRequests, registro)
@@ -14,7 +14,7 @@ func (i *ipRequest) gravar(registro string) error {
 	return nil
 }
 
-func (i *ipRequest) contem(registro string) bool {
+func (i *IPRequest) contem(registro string) bool {
 	for _, ip := range i.IPRequests {
 		if ip == registro {
 			return true
