@@ -2,5 +2,6 @@ package ratelimiter
 
 type ControlaCache interface {
 	gravar(registro Registro) error
-	buscar(id string) Registro
+	buscar(id string) *Registro
+	remover()
 }

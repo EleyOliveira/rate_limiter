@@ -23,7 +23,7 @@ func main() {
 		registro := &ratelimiter.CacheRegistro{}
 
 		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		ratelimiter.Controlar(IPRequisicao)
+		ratelimiter.Controlar(IPRequisicao, 5)
 
 		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))
 		fmt.Println(IPRequisicao, "\n", obterTokenRequest(r))
