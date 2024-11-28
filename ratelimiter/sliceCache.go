@@ -1,24 +1,21 @@
 package ratelimiter
 
 type CacheRegistro struct {
-	Registros []string
+	Registros []Registro
 }
 
-func (i *CacheRegistro) gravar(registro string) error {
+func (i *CacheRegistro) gravar(registro Registro) error {
 
-	if len(i.Registros) == 0 || !i.contem(registro) {
-		i.Registros = append(i.Registros, registro)
-		return nil
-	}
-
+	i.Registros = append(i.Registros, registro)
 	return nil
+
 }
 
-func (i *CacheRegistro) contem(registro string) bool {
-	for _, ip := range i.Registros {
-		if ip == registro {
-			return true
+func (i *CacheRegistro) buscar(id string) Registro {
+	for _, item := range i.Registros {
+		if item.Id == id {
+			return item
 		}
 	}
-	return false
+	return Registro{}
 }

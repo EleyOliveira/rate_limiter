@@ -8,15 +8,15 @@ import (
 
 func TestGravarRegistro(t *testing.T) {
 
-	ipRequest := &CacheRegistro{}
+	cache := &CacheRegistro{}
 
-	ratelimiter := NewRateLimiter(ipRequest)
+	ratelimiter := NewRateLimiter(cache)
 	ratelimiter.Controlar("175.890.789.123")
 	ratelimiter.Controlar("175.890.789.124")
 	ratelimiter.Controlar("175.890.789.125")
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.contem("175.890.789.123"))
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.contem("175.890.789.124"))
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.contem("175.890.789.125"))
-	assert.Equal(t, false, ratelimiter.controlaRateLimit.contem("175.890.789.480"))
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Id == "175.890.789.123")
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.124").Id == "175.890.789.124")
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.125").Id == "175.890.789.125")
+	assert.Equal(t, false, ratelimiter.controlaRateLimit.buscar("175.890.789.480").Id == "175.890.789.480")
 }

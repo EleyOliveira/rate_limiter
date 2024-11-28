@@ -10,9 +10,8 @@ type Registro struct {
 	Id            string
 	FinalControle time.Time
 	Bloqueado     bool
+	TotalRequests int
 }
-
-var registros []Registro
 
 func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	return &RateLimiter{
@@ -20,26 +19,30 @@ func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	}
 }
 
-func (r *RateLimiter) Controlar(registro string) {
-	r.controlaRateLimit.gravar(registro)
-}
+func (r *RateLimiter) Controlar(id string) {
 
-func GravarRegistro(id string) {
+	registro := r.controlaRateLimit.buscar(id)
 
-	registro := Registro{
-		Id:            id,
-		FinalControle: time.Now().Add(time.Second * 1),
-		Bloqueado:     false,
+	if registro.Bloqueado {
+		return
 	}
 
-	registros = append(registros, registro)
-}
+	if registro.Id == "" {
+		novoRegistro := Registro{
+			Id:            id,
+			FinalControle: time.Now().Add(time.Second * 1),
+			Bloqueado:     false,
+			TotalRequests: 0,
+		}
+		r.controlaRateLimit.gravar(novoRegistro)
+		return
+	}
 
-func ExisteRegistro(id string) bool {
-	for _, reg := range registros {
-		if reg.Id == id {
-			return true
+	if registro.FinalControle.Before(time.Now()) {
+		if registro.TotalRequests < 5 {
+			registro.TotalRequests++
+		} else {
+			registro.Bloqueado = true
 		}
 	}
-	return false
 }

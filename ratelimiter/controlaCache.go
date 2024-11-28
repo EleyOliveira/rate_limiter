@@ -1,6 +1,6 @@
 package ratelimiter
 
 type ControlaCache interface {
-	gravar(registro string) error
-	contem(registro string) bool
+	gravar(registro Registro) error
+	buscar(id string) Registro
 }
