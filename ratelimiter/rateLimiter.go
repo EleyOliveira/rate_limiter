@@ -14,13 +14,18 @@ type Registro struct {
 	TempoBloqueado int
 }
 
+type Token struct {
+	Id       string
+	ExpiraEm time.Time
+}
+
 func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	return &RateLimiter{
 		controlaRateLimit: controlaRateLimit,
 	}
 }
 
-func (r *RateLimiter) Controlar(id string, requisicaoPorSegundo int, totalMinutosBloqueado int) {
+func (r *RateLimiter) Controlar(id string, requisicaoPorSegundo int, totalMinutosBloqueado int, totalSegundosExpiracaoToken int) {
 
 	registro := r.controlaRateLimit.buscar(id)
 

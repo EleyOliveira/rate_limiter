@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"github.com/EleyOliveira/rate_limiter/ratelimiter"
+	"github.com/google/uuid"
 )
 
 func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+
 		w.Header().Set("Content-Type", "text/plain")
 
 		IPRequisicao, err := obterIPRequest(r)
@@ -24,6 +25,8 @@ func main() {
 
 		requisicaoPorSegundo := 5
 		totalTempoBloqueado := 2
+		totalSegundosExpiracaoToken := 60
+
 		id := IPRequisicao
 
 		token := obterTokenRequest(r)
@@ -33,12 +36,20 @@ func main() {
 			id = token
 		}
 		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		ratelimiter.Controlar(id, requisicaoPorSegundo, totalTempoBloqueado)
+		ratelimiter.Controlar(id, requisicaoPorSegundo, totalTempoBloqueado, totalSegundosExpiracaoToken)
 
+		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))
 		fmt.Println(IPRequisicao, "\n", obterTokenRequest(r))
 
 	})
+
+	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		novoToken := uuid.New().String()
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, novoToken)
+	})
+
 	http.ListenAndServe(":8080", nil)
 }
 
