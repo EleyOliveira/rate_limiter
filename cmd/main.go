@@ -22,8 +22,18 @@ func main() {
 
 		registro := &ratelimiter.CacheRegistro{}
 
+		requisicaoPorSegundo := 5
+		totalTempoBloqueado := 2
+		id := IPRequisicao
+
+		token := obterTokenRequest(r)
+		if token != "" {
+			requisicaoPorSegundo = 10
+			totalTempoBloqueado = 3
+			id = token
+		}
 		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		ratelimiter.Controlar(IPRequisicao, 5)
+		ratelimiter.Controlar(id, requisicaoPorSegundo, totalTempoBloqueado)
 
 		fmt.Fprintln(w, IPRequisicao, "\n", obterTokenRequest(r))
 		fmt.Println(IPRequisicao, "\n", obterTokenRequest(r))

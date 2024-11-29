@@ -1,6 +1,8 @@
 package ratelimiter
 
-import "time"
+import (
+	"time"
+)
 
 type CacheRegistro struct {
 	Registros []*Registro
@@ -25,9 +27,11 @@ func (i *CacheRegistro) buscar(id string) *Registro {
 func (i *CacheRegistro) remover() {
 	var registros []*Registro
 	for _, item := range i.Registros {
-		if !item.FinalControle.Before(time.Now().Add(time.Minute * 5)) {
+		if item.FinalControle.Before(time.Now().Add(time.Minute * time.Duration(item.TempoBloqueado))) {
 			registros = append(registros, item)
 		}
 	}
+
 	i.Registros = registros
+
 }
