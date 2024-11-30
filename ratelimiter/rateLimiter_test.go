@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/magiconair/properties/assert"
+	"github.com/tkuchiki/faketime"
 )
 
 const requisicaoPorSegundo = 5
@@ -62,10 +63,12 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 	ratelimiter := InicializarRateLimiter()
 	ratelimiter.Controlar("175.890.789.131", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
 
-	registro := ratelimiter.controlaRateLimit.buscar("175.890.789.131")
-	registro.FinalControle = registro.FinalControle.Add(time.Minute * time.Duration(totalSegundosBloqueado+1))
-	ratelimiter.controlaRateLimit.remover()
+	timeFake := faketime.NewFaketime(2000, time.February, 10, 9, 0, 0, 0, time.UTC)
+	defer timeFake.Undo()
 
+	timeFake.Do()
+
+	ratelimiter.controlaRateLimit.remover()
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.131") == nil)
 
 }
@@ -78,5 +81,16 @@ func TestNaoRemoverRegistroAntesTempoBloqueio(t *testing.T) {
 	ratelimiter.controlaRateLimit.remover()
 
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.132").Id == "175.890.789.132")
+
+}
+
+func TestGravarToken(t *testing.T) {
+
+	ratelimiter := InicializarRateLimiter()
+
+	token, err := ratelimiter.GerarToken(totalSegundosExpiracaoToken)
+	assert.Equal(t, true, err == nil)
+
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscarToken(token).Id == token)
 
 }

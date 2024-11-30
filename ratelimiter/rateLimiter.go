@@ -1,6 +1,10 @@
 package ratelimiter
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type RateLimiter struct {
 	controlaRateLimit ControlaCache
@@ -52,4 +56,17 @@ func (r *RateLimiter) Controlar(id string, requisicaoPorSegundo int, totalMinuto
 			registro.Bloqueado = true
 		}
 	}
+}
+
+func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error) {
+	token := Token{
+		Id:       uuid.New().String(),
+		ExpiraEm: time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
+	}
+
+	if err := r.controlaRateLimit.gravarToken(token); err != nil {
+		return "", err
+	}
+
+	return token.Id, nil
 }
