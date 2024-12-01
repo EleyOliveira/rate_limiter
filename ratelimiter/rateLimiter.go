@@ -19,8 +19,9 @@ type Registro struct {
 }
 
 type Token struct {
-	Id       string
-	ExpiraEm time.Time
+	Id        string
+	ExpiraEm  time.Time
+	Utilizado bool
 }
 
 func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
@@ -60,8 +61,9 @@ func (r *RateLimiter) Controlar(id string, requisicaoPorSegundo int, totalMinuto
 
 func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error) {
 	token := Token{
-		Id:       uuid.New().String(),
-		ExpiraEm: time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
+		Id:        uuid.New().String(),
+		ExpiraEm:  time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
+		Utilizado: false,
 	}
 
 	if err := r.controlaRateLimit.gravarToken(token); err != nil {

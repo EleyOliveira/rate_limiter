@@ -1,6 +1,7 @@
 package ratelimiter
 
 import (
+	"errors"
 	"time"
 )
 
@@ -42,11 +43,29 @@ func (i *CacheRegistro) gravarToken(token Token) error {
 
 }
 
-func (i *CacheRegistro) buscarToken(id string) *Token {
+func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 	for _, item := range i.Tokens {
 		if item.Id == id {
-			return item
+			if item.ExpiraEm.Before(time.Now()) {
+				return nil, errors.New("Token expirado")
+			}
+			if item.Utilizado {
+				return nil, errors.New("Token já utilizado")
+			}
+			item.Utilizado = true
+			return item, nil
 		}
 	}
+	return nil, errors.New("Token não encontrado")
+}
+
+func (i *CacheRegistro) removerToken() error {
+	var tokens []*Token
+	for _, item := range i.Tokens {
+		if item.ExpiraEm.After(time.Now()) {
+			tokens = append(tokens, item)
+		}
+	}
+	i.Tokens = tokens
 	return nil
 }

@@ -91,6 +91,46 @@ func TestGravarToken(t *testing.T) {
 	token, err := ratelimiter.GerarToken(totalSegundosExpiracaoToken)
 	assert.Equal(t, true, err == nil)
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscarToken(token).Id == token)
+	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
+
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, tokenGravado.Utilizado)
+	assert.Equal(t, true, tokenGravado.Id == token)
+
+}
+
+func TestRetornarMensagemParaTokenExpirado(t *testing.T) {
+
+	ratelimiter := InicializarRateLimiter()
+
+	token, err := ratelimiter.GerarToken(totalSegundosExpiracaoToken)
+	assert.Equal(t, true, err == nil)
+
+	timeFake := faketime.NewFaketime(2500, time.February, 10, 9, 0, 0, 0, time.UTC)
+	defer timeFake.Undo()
+
+	timeFake.Do()
+
+	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
+
+	assert.Equal(t, true, tokenGravado == nil)
+	assert.Equal(t, true, err.Error() == "Token expirado")
+}
+
+func TestRetornarMensagemParaTokenJaUtilizado(t *testing.T) {
+
+	ratelimiter := InicializarRateLimiter()
+
+	token, err := ratelimiter.GerarToken(totalSegundosExpiracaoToken)
+	assert.Equal(t, true, err == nil)
+
+	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
+
+	assert.Equal(t, true, tokenGravado.Utilizado)
+	assert.Equal(t, true, err == nil)
+
+	tokenGravado, err = ratelimiter.controlaRateLimit.buscarToken(token)
+	assert.Equal(t, true, tokenGravado == nil)
+	assert.Equal(t, true, err.Error() == "Token já utilizado")
 
 }
