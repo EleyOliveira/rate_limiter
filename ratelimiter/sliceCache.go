@@ -59,7 +59,7 @@ func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 	return nil, errors.New("Token não encontrado")
 }
 
-func (i *CacheRegistro) removerToken() error {
+func (i *CacheRegistro) removerToken() {
 	var tokens []*Token
 	for _, item := range i.Tokens {
 		if item.ExpiraEm.After(time.Now()) {
@@ -67,5 +67,4 @@ func (i *CacheRegistro) removerToken() error {
 		}
 	}
 	i.Tokens = tokens
-	return nil
 }

@@ -1,6 +1,8 @@
 package ratelimiter
 
 import (
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,7 +32,18 @@ func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	}
 }
 
-func (r *RateLimiter) Controlar(id string, requisicaoPorSegundo int, totalMinutosBloqueado int, totalSegundosExpiracaoToken int) {
+func (r *RateLimiter) Controlar(request *http.Request, requisicaoPorSegundo int, totalMinutosBloqueado int, totalSegundosExpiracaoToken int) {
+
+	var id string
+	id = obterTokenRequest(request)
+
+	if id == "" {
+		ip, err := obterIPRequest(request)
+		if err != nil {
+			panic(err)
+		}
+		id = ip
+	}
 
 	registro := r.controlaRateLimit.buscar(id)
 
@@ -71,4 +84,19 @@ func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error
 	}
 
 	return token.Id, nil
+}
+
+func obterIPRequest(r *http.Request) (string, error) {
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
+
+	if err != nil {
+		return "", err
+	}
+
+	return addr, nil
+}
+
+func obterTokenRequest(r *http.Request) string {
+	token := r.Header.Get("API_KEY")
+	return token
 }
