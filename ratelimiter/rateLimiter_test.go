@@ -19,21 +19,20 @@ func inicializarRateLimiter() RateLimiter {
 }
 
 func inicializarRequestTeste(ip string, porta string) http.Request {
-	req, err := http.NewRequest("GET", "http://teste.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req.RemoteAddr = "175.890.789.132:1234"
+	req, _ := http.NewRequest("", "", nil)
+	req.RemoteAddr = ip + ":" + porta
 	return *req
 }
 
 func TestGravarRegistro(t *testing.T) {
 
 	ratelimiter := inicializarRateLimiter()
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.124", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.125", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req := inicializarRequestTeste("175.890.789.123", "1234")
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req = inicializarRequestTeste("175.890.789.124", "1234")
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req = inicializarRequestTeste("175.890.789.125", "1234")
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
 
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Id == "175.890.789.123")
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.124").Id == "175.890.789.124")
@@ -45,12 +44,13 @@ func TestGravarRegistro(t *testing.T) {
 func TestBloquearRegistroQuandoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 
 	ratelimiter := inicializarRateLimiter()
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req := inicializarRequestTeste("175.890.789.123", "1234")
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
 
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundo)
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == true)
@@ -60,19 +60,25 @@ func TestBloquearRegistroQuandoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 func TestNaoBloquearRegistroQuandoNaoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 
 	ratelimiter := inicializarRateLimiter()
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	//ratelimiter.Controlar("175.890.789.123", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req := inicializarRequestTeste("175.890.789.123", "1234")
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == 4)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundo-1)
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == false)
 }
 
 func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 
 	ratelimiter := inicializarRateLimiter()
-	//ratelimiter.Controlar("175.890.789.131", requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	req := inicializarRequestTeste("175.890.789.131", "1234")
+
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+
+	registroIncluido := ratelimiter.controlaRateLimit.buscar("175.890.789.131")
+	assert.Equal(t, true, registroIncluido.Id == "175.890.789.131")
 
 	timeFake := faketime.NewFaketime(2000, time.February, 10, 9, 0, 0, 0, time.UTC)
 	defer timeFake.Undo()
@@ -80,20 +86,16 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 	timeFake.Do()
 
 	ratelimiter.controlaRateLimit.remover()
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.131") == nil)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar(registroIncluido.Id) == nil)
 
 }
 
 func TestNaoRemoverRegistroAntesTempoBloqueio(t *testing.T) {
 
 	ratelimiter := inicializarRateLimiter()
-	req, err := http.NewRequest("GET", "http://teste.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := inicializarRequestTeste("175.890.789.132", "1234")
 
-	req.RemoteAddr = "175.890.789.132:1234"
-	ratelimiter.Controlar(req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
 
 	ratelimiter.controlaRateLimit.remover()
 
