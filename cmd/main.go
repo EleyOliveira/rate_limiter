@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/EleyOliveira/rate_limiter/ratelimiter"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -15,16 +14,32 @@ func main() {
 		registro := &ratelimiter.CacheRegistro{}
 
 		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		ratelimiter.Controlar(r, 5, 5, 60)
+		statusCode, err := ratelimiter.Controlar(r, 5, 5, 60)
+		if err != nil {
+			w.WriteHeader(statusCode)
+			fmt.Fprintln(w, err.Error())
+			return
+		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(statusCode)
+		fmt.Fprintln(w, "Sucesso")
 
 	})
 
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
-		novoToken := uuid.New().String()
+
+		registro := &ratelimiter.CacheRegistro{}
+
+		ratelimiter := ratelimiter.NewRateLimiter(registro)
+		token, err := ratelimiter.GerarToken(60)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, err.Error())
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, novoToken)
+		fmt.Fprintln(w, token)
 	})
 
 	http.ListenAndServe(":8080", nil)

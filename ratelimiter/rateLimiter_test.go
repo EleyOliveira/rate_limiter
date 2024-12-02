@@ -51,14 +51,14 @@ func TestGravarRegistro(t *testing.T) {
 
 func TestBloquearRegistroQuandoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 
+	const totalRequisicao int = 6
+
 	ratelimiter := inicializarRateLimiter()
 	req := inicializarRequestTeste("175.890.789.123", "1234")
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+
+	for i := 0; i < totalRequisicao; i++ {
+		ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	}
 
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundo)
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == true)
@@ -67,12 +67,14 @@ func TestBloquearRegistroQuandoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 
 func TestNaoBloquearRegistroQuandoNaoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 
+	const totalRequisicao int = 4
+
 	ratelimiter := inicializarRateLimiter()
 	req := inicializarRequestTeste("175.890.789.123", "1234")
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+
+	for i := 0; i < totalRequisicao; i++ {
+		ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	}
 
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundo-1)
 	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == false)
@@ -189,6 +191,8 @@ func TestRemoverToke(t *testing.T) {
 
 func TestBloquearPorSegundosRequisicaoToken(t *testing.T) {
 
+	const totalRequisicao int = 11
+
 	ratelimiter := inicializarRateLimiter()
 	req := inicializarRequestTesteComToken("175.456.879.120", "3421", "token_teste_123")
 
@@ -196,19 +200,52 @@ func TestBloquearPorSegundosRequisicaoToken(t *testing.T) {
 		requisicaoPorSegundo = 10
 	}
 
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
-	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	for i := 0; i < totalRequisicao; i++ {
+		ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("token_teste_123").TotalRequests == requisicaoPorSegundo)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("token_teste_123").Bloqueado == true)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == requisicaoPorSegundo)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == true)
+
+}
+
+func TestNaoBloquearPorSegundosRequisicaoToken(t *testing.T) {
+
+	const totalRequisicao int = 7
+
+	ratelimiter := inicializarRateLimiter()
+	req := inicializarRequestTesteComToken("175.456.879.120", "3421", "token_teste_123")
+
+	if req.Header.Values("API_KEY")[0] != "" {
+		requisicaoPorSegundo = 10
+	}
+
+	for i := 0; i < totalRequisicao; i++ {
+		ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	}
+
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests < requisicaoPorSegundo)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == false)
+
+}
+
+func TestRetornarMensagemTotalRequisicaoPorSegundoExcedida(t *testing.T) {
+
+	const totalRequisicao int = 6
+
+	ratelimiter := inicializarRateLimiter()
+	req := inicializarRequestTeste("175.890.789.123", "1234")
+
+	for i := 0; i < totalRequisicao; i++ {
+		ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	}
+
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundo)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == true)
+
+	statusCode, err := ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+
+	assert.Equal(t, true, statusCode == http.StatusTooManyRequests)
+	assert.Equal(t, true, err.Error() == "you have reached the maximum number of requests or actions allowed within a certain time frame")
 
 }

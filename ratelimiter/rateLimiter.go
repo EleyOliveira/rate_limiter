@@ -1,6 +1,7 @@
 package ratelimiter
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -32,35 +33,34 @@ func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	}
 }
 
-func (r *RateLimiter) Controlar(request *http.Request, requisicaoPorSegundo int, totalMinutosBloqueado int, totalSegundosExpiracaoToken int) {
+func (r *RateLimiter) Controlar(request *http.Request, requisicaoPorSegundo int,
+	totalMinutosBloqueado int, totalSegundosExpiracaoToken int) (int, error) {
 
-	var id string
-	id = obterTokenRequest(request)
-
-	if id == "" {
-		ip, err := obterIPRequest(request)
-		if err != nil {
-			panic(err)
-		}
-		id = ip
+	if obterTokenRequest(request) != "" {
+		requisicaoPorSegundo = 10
 	}
 
-	registro := r.controlaRateLimit.buscar(id)
+	ip, err := obterIPRequest(request)
+	if err != nil {
+		panic(err)
+	}
+
+	registro := r.controlaRateLimit.buscar(ip)
 
 	if registro == nil {
 		novoRegistro := Registro{
-			Id:             id,
+			Id:             ip,
 			FinalControle:  time.Now().Add(time.Second * 1),
 			Bloqueado:      false,
 			TotalRequests:  1,
 			TempoBloqueado: totalMinutosBloqueado,
 		}
 		r.controlaRateLimit.gravar(novoRegistro)
-		return
+		return http.StatusOK, nil
 	}
 
 	if registro.Bloqueado {
-		return
+		return http.StatusTooManyRequests, errors.New("you have reached the maximum number of requests or actions allowed within a certain time frame")
 	}
 
 	if registro.FinalControle.After(time.Now()) {
@@ -70,6 +70,8 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicaoPorSegundo int,
 			registro.Bloqueado = true
 		}
 	}
+
+	return http.StatusOK, nil
 }
 
 func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error) {
