@@ -9,7 +9,8 @@ import (
 	"github.com/tkuchiki/faketime"
 )
 
-const requisicaoPorSegundo = 5
+var requisicaoPorSegundo = 5
+
 const totalSegundosBloqueado = 60
 const totalSegundosExpiracaoToken = 60
 
@@ -20,6 +21,13 @@ func inicializarRateLimiter() RateLimiter {
 
 func inicializarRequestTeste(ip string, porta string) http.Request {
 	req, _ := http.NewRequest("", "", nil)
+	req.RemoteAddr = ip + ":" + porta
+	return *req
+}
+
+func inicializarRequestTesteComToken(ip string, porta string, token string) http.Request {
+	req, _ := http.NewRequest("", "", nil)
+	req.Header.Add("API_KEY", token)
 	req.RemoteAddr = ip + ":" + porta
 	return *req
 }
@@ -176,5 +184,31 @@ func TestRemoverToke(t *testing.T) {
 
 	assert.Equal(t, true, tokenRemovido == nil)
 	assert.Equal(t, true, err.Error() == "Token não encontrado")
+
+}
+
+func TestBloquearPorSegundosRequisicaoToken(t *testing.T) {
+
+	ratelimiter := inicializarRateLimiter()
+	req := inicializarRequestTesteComToken("175.456.879.120", "3421", "token_teste_123")
+
+	if req.Header.Values("API_KEY")[0] != "" {
+		requisicaoPorSegundo = 10
+	}
+
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+	ratelimiter.Controlar(&req, requisicaoPorSegundo, totalSegundosBloqueado, totalSegundosExpiracaoToken)
+
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("token_teste_123").TotalRequests == requisicaoPorSegundo)
+	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("token_teste_123").Bloqueado == true)
 
 }
