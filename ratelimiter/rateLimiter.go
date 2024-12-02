@@ -33,11 +33,16 @@ func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	}
 }
 
-func (r *RateLimiter) Controlar(request *http.Request, requisicaoPorSegundo int,
-	totalMinutosBloqueado int, totalSegundosExpiracaoToken int) (int, error) {
+func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP int,
+	requisicoesPorSegundoToken int, tempoBloqueioEmSegundosIP int, tempoBloqueioEmSegundosToken int,
+	tempoEmSegundosExpiracaoToken int) (int, error) {
+
+	requisicaoPorSegundo := requisicoesPorSegundoIP
+	totalMinutosBloqueado := tempoBloqueioEmSegundosIP
 
 	if obterTokenRequest(request) != "" {
-		requisicaoPorSegundo = 10
+		requisicaoPorSegundo = requisicoesPorSegundoToken
+		totalMinutosBloqueado = tempoBloqueioEmSegundosToken
 	}
 
 	ip, err := obterIPRequest(request)
