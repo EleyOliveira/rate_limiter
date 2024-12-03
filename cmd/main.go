@@ -22,31 +22,27 @@ func main() {
 
 	configuracao := carregarConfiguracao()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	registro := &ratelimiter.CacheRegistro{}
+	ratelimiter := ratelimiter.NewRateLimiter(registro)
 
-		registro := &ratelimiter.CacheRegistro{}
+	http.Handle("/", rateLimiterMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		statusCode, err := ratelimiter.Controlar(r, configuracao.requisicoesPorSegundoIP,
+		/*statusCode, err := ratelimiter.Controlar(r, configuracao.requisicoesPorSegundoIP,
 			configuracao.requisicoesPorSegundoToken, configuracao.tempoBloqueioEmSegundosIP,
 			configuracao.tempoBloqueioEmSegundosToken, configuracao.tempoEmSegundosExpiracaoToken)
 		if err != nil {
 			w.WriteHeader(statusCode)
 			fmt.Fprintln(w, err.Error())
 			return
-		}
+		}*/
 
-		w.WriteHeader(statusCode)
 		fmt.Fprintln(w, "Sucesso")
 
-	})
+	}), ratelimiter, configuracao))
 
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 
-		registro := &ratelimiter.CacheRegistro{}
-
-		ratelimiter := ratelimiter.NewRateLimiter(registro)
-		token, err := ratelimiter.GerarToken(60)
+		token, err := ratelimiter.GerarToken(configuracao.tempoEmSegundosExpiracaoToken)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintln(w, err.Error())
@@ -116,4 +112,20 @@ func validarConfiguracao(configuracao string) (int, error) {
 
 	return valor, nil
 
+}
+
+func rateLimiterMiddleware(next http.Handler, rl *ratelimiter.RateLimiter, config Configuracao) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		statusCode, err := rl.Controlar(r, config.requisicoesPorSegundoIP,
+			config.requisicoesPorSegundoToken, config.tempoBloqueioEmSegundosIP,
+			config.tempoBloqueioEmSegundosToken, config.tempoEmSegundosExpiracaoToken)
+
+		if err != nil {
+			w.WriteHeader(statusCode)
+			fmt.Fprintln(w, err.Error())
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
