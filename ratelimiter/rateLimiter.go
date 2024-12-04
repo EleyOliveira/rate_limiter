@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +27,8 @@ type Token struct {
 	ExpiraEm  time.Time
 	Utilizado bool
 }
+
+var mutex sync.Mutex
 
 func NewRateLimiter(controlaRateLimit ControlaCache) *RateLimiter {
 	return &RateLimiter{
@@ -50,6 +53,8 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		panic(err)
 	}
 
+	mutex.Lock()
+	defer mutex.Unlock()
 	registro := r.controlaRateLimit.buscar(ip)
 
 	if registro == nil {
@@ -60,13 +65,22 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 			TotalRequests:  1,
 			TempoBloqueado: totalMinutosBloqueado,
 		}
+
 		r.controlaRateLimit.gravar(novoRegistro)
+
 		return http.StatusOK, nil
 	}
+
+	atualizarRegistro(registro, requisicaoPorSegundo)
 
 	if registro.Bloqueado {
 		return http.StatusTooManyRequests, errors.New("you have reached the maximum number of requests or actions allowed within a certain time frame")
 	}
+
+	return http.StatusOK, nil
+}
+
+func atualizarRegistro(registro *Registro, requisicaoPorSegundo int) {
 
 	if registro.FinalControle.After(time.Now()) {
 		if registro.TotalRequests < requisicaoPorSegundo {
@@ -75,8 +89,6 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 			registro.Bloqueado = true
 		}
 	}
-
-	return http.StatusOK, nil
 }
 
 func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error) {

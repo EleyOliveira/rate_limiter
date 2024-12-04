@@ -27,15 +27,6 @@ func main() {
 
 	http.Handle("/", rateLimiterMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		/*statusCode, err := ratelimiter.Controlar(r, configuracao.requisicoesPorSegundoIP,
-			configuracao.requisicoesPorSegundoToken, configuracao.tempoBloqueioEmSegundosIP,
-			configuracao.tempoBloqueioEmSegundosToken, configuracao.tempoEmSegundosExpiracaoToken)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprintln(w, err.Error())
-			return
-		}*/
-
 		fmt.Fprintln(w, "Sucesso")
 
 	}), ratelimiter, configuracao))
