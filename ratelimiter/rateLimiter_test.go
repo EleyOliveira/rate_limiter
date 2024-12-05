@@ -124,7 +124,6 @@ func TestGravarToken(t *testing.T) {
 	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
 
 	assert.Equal(t, true, err == nil)
-	assert.Equal(t, true, tokenGravado.Utilizado)
 	assert.Equal(t, true, tokenGravado.Id == token)
 
 }
@@ -145,24 +144,6 @@ func TestRetornarMensagemParaTokenExpirado(t *testing.T) {
 
 	assert.Equal(t, true, tokenGravado == nil)
 	assert.Equal(t, true, err.Error() == "Token expirado")
-}
-
-func TestRetornarMensagemParaTokenJaUtilizado(t *testing.T) {
-
-	ratelimiter := inicializarRateLimiter()
-
-	token, err := ratelimiter.GerarToken(tempoSegundosExpiracaoToken)
-	assert.Equal(t, true, err == nil)
-
-	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
-
-	assert.Equal(t, true, tokenGravado.Utilizado)
-	assert.Equal(t, true, err == nil)
-
-	tokenGravado, err = ratelimiter.controlaRateLimit.buscarToken(token)
-	assert.Equal(t, true, tokenGravado == nil)
-	assert.Equal(t, true, err.Error() == "Token já utilizado")
-
 }
 
 func TestRemoverToke(t *testing.T) {
@@ -195,8 +176,8 @@ func TestBloquearPorSegundosRequisicaoToken(t *testing.T) {
 	const totalRequisicao int = 11
 
 	ratelimiter := inicializarRateLimiter()
-	req := inicializarRequestTesteComToken("175.456.879.120", "3421", "token_teste_123")
-
+	token, _ := ratelimiter.GerarToken(tempoSegundosExpiracaoToken)
+	req := inicializarRequestTesteComToken("175.456.879.120", "3421", token)
 	for i := 0; i < totalRequisicao; i++ {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
@@ -211,7 +192,8 @@ func TestNaoBloquearPorSegundosRequisicaoToken(t *testing.T) {
 	const totalRequisicao int = 7
 
 	ratelimiter := inicializarRateLimiter()
-	req := inicializarRequestTesteComToken("175.456.879.120", "3421", "token_teste_123")
+	token, _ := ratelimiter.GerarToken(tempoSegundosExpiracaoToken)
+	req := inicializarRequestTesteComToken("175.456.879.120", "3421", token)
 
 	for i := 0; i < totalRequisicao; i++ {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)

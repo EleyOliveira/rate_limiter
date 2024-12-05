@@ -23,9 +23,8 @@ type Registro struct {
 }
 
 type Token struct {
-	Id        string
-	ExpiraEm  time.Time
-	Utilizado bool
+	Id       string
+	ExpiraEm time.Time
 }
 
 var mutex sync.Mutex
@@ -43,7 +42,17 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	requisicaoPorSegundo := requisicoesPorSegundoIP
 	totalMinutosBloqueado := tempoBloqueioEmSegundosIP
 
-	if obterTokenRequest(request) != "" {
+	tokenRequest := obterTokenRequest(request)
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	var token Token
+
+	if tokenRequest != "" {
+		if token, err := r.controlaRateLimit.buscarToken(tokenRequest); err != nil {
+			return http.StatusInternalServerError, err
+		}
 		requisicaoPorSegundo = requisicoesPorSegundoToken
 		totalMinutosBloqueado = tempoBloqueioEmSegundosToken
 	}
@@ -53,8 +62,6 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		panic(err)
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
 	registro := r.controlaRateLimit.buscar(ip)
 
 	if registro == nil {
@@ -71,9 +78,19 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		return http.StatusOK, nil
 	}
 
+	if registro.Bloqueado {
+
+	}
+
 	atualizarRegistro(registro, requisicaoPorSegundo)
 
 	if registro.Bloqueado {
+		if token.Id != "" {
+			r.controlaRateLimit.removerToken()
+		} else {
+			r.controlaRateLimit.remover()
+		}
+
 		return http.StatusTooManyRequests, errors.New("you have reached the maximum number of requests or actions allowed within a certain time frame")
 	}
 
@@ -96,9 +113,8 @@ func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error
 	defer mutex.Unlock()
 
 	token := Token{
-		Id:        uuid.New().String(),
-		ExpiraEm:  time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
-		Utilizado: false,
+		Id:       uuid.New().String(),
+		ExpiraEm: time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
 	}
 
 	if err := r.controlaRateLimit.gravarToken(token); err != nil {

@@ -49,10 +49,7 @@ func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 			if item.ExpiraEm.Before(time.Now()) {
 				return nil, errors.New("Token expirado")
 			}
-			if item.Utilizado {
-				return nil, errors.New("Token já utilizado")
-			}
-			item.Utilizado = true
+
 			return item, nil
 		}
 	}
