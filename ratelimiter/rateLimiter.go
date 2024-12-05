@@ -92,6 +92,9 @@ func atualizarRegistro(registro *Registro, requisicaoPorSegundo int) {
 }
 
 func (r *RateLimiter) GerarToken(totalSegundosExpiracaoToken int) (string, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	token := Token{
 		Id:        uuid.New().String(),
 		ExpiraEm:  time.Now().Add(time.Second * time.Duration(totalSegundosExpiracaoToken)),
