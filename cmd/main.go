@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/EleyOliveira/rate_limiter/ratelimiter"
 	"github.com/joho/godotenv"
@@ -24,6 +25,8 @@ func main() {
 
 	registro := &ratelimiter.CacheRegistro{}
 	ratelimiter := ratelimiter.NewRateLimiter(registro)
+	ratelimiter.InicializarLimpezaRegistro(1 * time.Minute)
+	ratelimiter.InicializarLimpezaToken(1 * time.Minute)
 
 	http.Handle("/", rateLimiterMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

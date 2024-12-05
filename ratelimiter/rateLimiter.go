@@ -119,3 +119,43 @@ func obterTokenRequest(r *http.Request) string {
 	token := r.Header.Get("API_KEY")
 	return token
 }
+
+func (r *RateLimiter) InicializarLimpezaRegistro(intervalo time.Duration) {
+
+	go func() {
+		ticker := time.NewTicker(intervalo)
+		defer ticker.Stop()
+
+		for {
+			for range ticker.C {
+				r.removerRegistro()
+			}
+		}
+	}()
+}
+
+func (r *RateLimiter) InicializarLimpezaToken(intervalo time.Duration) {
+
+	go func() {
+		ticker := time.NewTicker(intervalo)
+		defer ticker.Stop()
+
+		for {
+			for range ticker.C {
+				r.removerToken()
+			}
+		}
+	}()
+}
+
+func (r *RateLimiter) removerRegistro() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	r.controlaRateLimit.remover()
+}
+
+func (r *RateLimiter) removerToken() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	r.controlaRateLimit.removerToken()
+}

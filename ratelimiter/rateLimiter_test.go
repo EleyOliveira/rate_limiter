@@ -91,7 +91,7 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 	registroIncluido := ratelimiter.controlaRateLimit.buscar("175.890.789.131")
 	assert.Equal(t, true, registroIncluido.Id == "175.890.789.131")
 
-	timeFake := faketime.NewFaketime(2000, time.February, 10, 9, 0, 0, 0, time.UTC)
+	timeFake := faketime.NewFaketime(2500, time.February, 10, 9, 0, 0, 0, time.UTC)
 	defer timeFake.Undo()
 
 	timeFake.Do()

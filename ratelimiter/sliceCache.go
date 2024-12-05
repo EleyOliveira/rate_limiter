@@ -29,7 +29,7 @@ func (i *CacheRegistro) buscar(id string) *Registro {
 func (i *CacheRegistro) remover() {
 	var registros []*Registro
 	for _, item := range i.Registros {
-		if item.FinalControle.Before(time.Now().Add(time.Second * time.Duration(item.TempoBloqueado))) {
+		if item.FinalControle.Add(time.Second * time.Duration(item.TempoBloqueado)).After(time.Now()) {
 			registros = append(registros, item)
 		}
 	}
