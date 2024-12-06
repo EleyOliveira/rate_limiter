@@ -47,12 +47,15 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	var token Token
+	var token *Token
 
 	if tokenRequest != "" {
-		if token, err := r.controlaRateLimit.buscarToken(tokenRequest); err != nil {
+		var err error
+		token, err = r.controlaRateLimit.buscarToken(tokenRequest)
+		if err != nil {
 			return http.StatusInternalServerError, err
 		}
+
 		requisicaoPorSegundo = requisicoesPorSegundoToken
 		totalMinutosBloqueado = tempoBloqueioEmSegundosToken
 	}
@@ -78,15 +81,15 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		return http.StatusOK, nil
 	}
 
-	if registro.Bloqueado {
-
-	}
-
 	atualizarRegistro(registro, requisicaoPorSegundo)
 
 	if registro.Bloqueado {
-		if token.Id != "" {
-			r.controlaRateLimit.removerToken()
+		if token != nil {
+			if token.ExpiraEm.After(time.Now()) && registro.FinalControle.Add(time.Second*time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
+				registro.Bloqueado = false
+				registro.TotalRequests = 1
+				return http.StatusOK, nil
+			}
 		} else {
 			r.controlaRateLimit.remover()
 		}
