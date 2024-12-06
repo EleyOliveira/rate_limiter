@@ -2,6 +2,7 @@ package ratelimiter
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -79,6 +80,15 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		r.controlaRateLimit.gravar(novoRegistro)
 
 		return http.StatusOK, nil
+	}
+	fmt.Println(registro.FinalControle)
+	fmt.Println(time.Now().Truncate(time.Second).Add(time.Second * 1))
+	fmt.Println(registro.Bloqueado)
+	fmt.Println(registro.TotalRequests)
+
+	if registro.FinalControle.Before(time.Now().Truncate(time.Second).Add(time.Second*1)) && !registro.Bloqueado {
+		registro.FinalControle = time.Now().Add(time.Second * 1)
+		registro.TotalRequests = 0
 	}
 
 	atualizarRegistro(registro, requisicaoPorSegundo)
