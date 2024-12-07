@@ -85,21 +85,16 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	fmt.Println(time.Now().Truncate(time.Second).Add(time.Second * 1))
 	fmt.Println(registro.Bloqueado)
 	fmt.Println(registro.TotalRequests)
+	fmt.Println(token.Id)
 
-	if registro.FinalControle.Before(time.Now().Truncate(time.Second).Add(time.Second*1)) && !registro.Bloqueado {
-		registro.FinalControle = time.Now().Add(time.Second * 1)
-		registro.TotalRequests = 0
-	}
+	atualizarIntervaloControle(registro)
 
-	atualizarRegistro(registro, requisicaoPorSegundo)
+	bloquearRegistro(registro, requisicaoPorSegundo)
 
 	if registro.Bloqueado {
-		if token != nil {
-			if token.ExpiraEm.After(time.Now()) && registro.FinalControle.Add(time.Second*time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
-				registro.Bloqueado = false
-				registro.TotalRequests = 1
-				return http.StatusOK, nil
-			}
+
+		if token != nil && desbloqueiaRegistro(registro, token) {
+			return http.StatusOK, nil
 		} else {
 			r.controlaRateLimit.remover()
 		}
@@ -110,7 +105,7 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	return http.StatusOK, nil
 }
 
-func atualizarRegistro(registro *Registro, requisicaoPorSegundo int) {
+func bloquearRegistro(registro *Registro, requisicaoPorSegundo int) {
 
 	if registro.FinalControle.After(time.Now()) {
 		if registro.TotalRequests < requisicaoPorSegundo {
@@ -178,6 +173,22 @@ func (r *RateLimiter) InicializarLimpezaToken(intervalo time.Duration) {
 			}
 		}
 	}()
+}
+
+func desbloqueiaRegistro(registro *Registro, token *Token) bool {
+	if token.ExpiraEm.After(time.Now()) && registro.FinalControle.Add(time.Second*time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
+		registro.Bloqueado = false
+		registro.TotalRequests = 1
+		return true
+	}
+	return false
+}
+
+func atualizarIntervaloControle(registro *Registro) {
+	if registro.FinalControle.Before(time.Now().Truncate(time.Second).Add(time.Second*1)) && !registro.Bloqueado {
+		registro.FinalControle = time.Now().Add(time.Second * 1)
+		registro.TotalRequests = 0
+	}
 }
 
 func (r *RateLimiter) removerRegistro() {
