@@ -63,10 +63,13 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 
 	ip, err := obterIPRequest(request)
 	if err != nil {
-		panic(err)
+		return http.StatusInternalServerError, err
 	}
 
-	registro := r.controlaRateLimit.buscar(ip)
+	registro, err := r.controlaRateLimit.buscar(ip)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
 
 	if registro == nil {
 		novoRegistro := Registro{
@@ -77,7 +80,10 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 			TempoBloqueado: totalMinutosBloqueado,
 		}
 
-		r.controlaRateLimit.gravar(novoRegistro)
+		err := r.controlaRateLimit.gravar(novoRegistro)
+		if err != nil {
+			return http.StatusInternalServerError, err
+		}
 
 		return http.StatusOK, nil
 	}

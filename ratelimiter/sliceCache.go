@@ -5,28 +5,28 @@ import (
 	"time"
 )
 
-type CacheRegistro struct {
+type CacheRegistroSlice struct {
 	Registros []*Registro
 	Tokens    []*Token
 }
 
-func (i *CacheRegistro) gravar(registro Registro) error {
+func (i *CacheRegistroSlice) gravar(registro Registro) error {
 
 	i.Registros = append(i.Registros, &registro)
 	return nil
 
 }
 
-func (i *CacheRegistro) buscar(id string) *Registro {
+func (i *CacheRegistroSlice) buscar(id string) (*Registro, error) {
 	for _, item := range i.Registros {
 		if item.Id == id {
-			return item
+			return item, nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-func (i *CacheRegistro) remover() {
+func (i *CacheRegistroSlice) remover() {
 	var registros []*Registro
 	for _, item := range i.Registros {
 		if item.FinalControle.Add(time.Second * time.Duration(item.TempoBloqueado)).After(time.Now()) {
@@ -36,14 +36,14 @@ func (i *CacheRegistro) remover() {
 	i.Registros = registros
 }
 
-func (i *CacheRegistro) gravarToken(token Token) error {
+func (i *CacheRegistroSlice) gravarToken(token Token) error {
 
 	i.Tokens = append(i.Tokens, &token)
 	return nil
 
 }
 
-func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
+func (i *CacheRegistroSlice) buscarToken(id string) (*Token, error) {
 	for _, item := range i.Tokens {
 		if item.Id == id {
 			if item.ExpiraEm.Before(time.Now()) {
@@ -56,7 +56,7 @@ func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 	return nil, errors.New("Token não encontrado")
 }
 
-func (i *CacheRegistro) removerToken() {
+func (i *CacheRegistroSlice) removerToken() {
 	var tokens []*Token
 	for _, item := range i.Tokens {
 		if item.ExpiraEm.After(time.Now()) {
