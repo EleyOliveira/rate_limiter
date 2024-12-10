@@ -85,7 +85,10 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	fmt.Println(time.Now().Truncate(time.Second).Add(time.Second * 1))
 	fmt.Println(registro.Bloqueado)
 	fmt.Println(registro.TotalRequests)
-	fmt.Println(token.Id)
+	if token != nil {
+		fmt.Println(token.Id)
+	}
+	fmt.Println(ip)
 
 	atualizarIntervaloControle(registro)
 
