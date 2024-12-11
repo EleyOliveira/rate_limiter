@@ -3,6 +3,8 @@ package ratelimiter
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -49,11 +51,43 @@ func (i *CacheRegistro) remover() {
 }
 
 func (i *CacheRegistro) gravarToken(token Token) error {
+
+	data, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+
+	err = conectarRedis().Set(context.Background(), token.Id, data, 0).Err()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
-	return nil, nil
+
+	val, err := conectarRedis().Get(context.Background(), id).Result()
+
+	if err == redis.Nil {
+		return nil, errors.New("Token não encontrado")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	var token Token
+	err = json.Unmarshal([]byte(val), &token)
+	if err != nil {
+		return nil, err
+	}
+
+	if token.ExpiraEm.Before(time.Now()) {
+		return nil, errors.New("Token expirado")
+	}
+
+	return &token, nil
 }
 
 func (i *CacheRegistro) removerToken() {

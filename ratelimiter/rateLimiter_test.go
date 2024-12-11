@@ -43,10 +43,21 @@ func TestGravarRegistro(t *testing.T) {
 	req = inicializarRequestTeste("175.890.789.125", "1234")
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Id == "175.890.789.123")
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.124").Id == "175.890.789.124")
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.125").Id == "175.890.789.125")
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.480") == nil)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.123")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.Id == "175.890.789.123")
+
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.890.789.124")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.Id == "175.890.789.124")
+
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.890.789.125")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.Id == "175.890.789.125")
+
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.890.789.480")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro == nil)
 
 }
 
@@ -61,8 +72,11 @@ func TestBloquearRegistroQuandoUltrapassarRequisicaoPorSegundo(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundoIP)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.123")
+	assert.Equal(t, true, err == nil)
+
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoIP)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 }
 
@@ -77,8 +91,11 @@ func TestNaoBloquearRegistroQuandoNaoUltrapassarRequisicaoPorSegundo(t *testing.
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundoIP-1)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == false)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.123")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoIP-1)
+	assert.Equal(t, true, registro.Bloqueado == false)
+
 }
 
 func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
@@ -88,7 +105,8 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	registroIncluido := ratelimiter.controlaRateLimit.buscar("175.890.789.131")
+	registroIncluido, err := ratelimiter.controlaRateLimit.buscar("175.890.789.131")
+	assert.Equal(t, true, err == nil)
 	assert.Equal(t, true, registroIncluido.Id == "175.890.789.131")
 
 	timeFake := faketime.NewFaketime(2500, time.February, 10, 9, 0, 0, 0, time.UTC)
@@ -97,7 +115,9 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 	timeFake.Do()
 
 	ratelimiter.controlaRateLimit.remover()
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar(registroIncluido.Id) == nil)
+	registroIncluido, err = ratelimiter.controlaRateLimit.buscar("175.890.789.131")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registroIncluido.Id == "")
 
 }
 
@@ -110,7 +130,9 @@ func TestNaoRemoverRegistroAntesTempoBloqueio(t *testing.T) {
 
 	ratelimiter.controlaRateLimit.remover()
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.132").Id == "175.890.789.132")
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.132")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.Id == "175.890.789.132")
 
 }
 
@@ -182,8 +204,10 @@ func TestBloquearPorSegundosRequisicaoToken(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == requisicaoPorSegundoToken)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoToken)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 }
 
@@ -204,16 +228,20 @@ func TestDesBloquearRequisicaoPorTokenAntesExpiracao(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == requisicaoPorSegundoToken)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoToken)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 	timeFake = faketime.NewFaketime(2000, time.February, 10, 9, 14, 32, 0, time.UTC)
 	timeFake.Do()
 
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == 1)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == false)
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == 1)
+	assert.Equal(t, true, registro.Bloqueado == false)
 
 }
 
@@ -234,16 +262,20 @@ func TestNaoDesBloquearRequisicaoPorTokenAposExpiracao(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == requisicaoPorSegundoToken)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoToken)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 	timeFake = faketime.NewFaketime(2000, time.February, 10, 9, 16, 32, 0, time.UTC)
 	timeFake.Do()
 
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	assert.Equal(t, false, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == 1)
-	assert.Equal(t, false, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == false)
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, false, registro.TotalRequests == 1)
+	assert.Equal(t, false, registro.Bloqueado == false)
 
 }
 
@@ -264,16 +296,20 @@ func TestNaoDesBloquearRequisicaoPorTokenAntesFimPeriodoBloqueio(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == requisicaoPorSegundoToken)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoToken)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 	timeFake = faketime.NewFaketime(2000, time.February, 10, 9, 12, 32, 0, time.UTC)
 	timeFake.Do()
 
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	assert.Equal(t, false, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests == 1)
-	assert.Equal(t, false, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == false)
+	registro, err = ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, false, registro.TotalRequests == 1)
+	assert.Equal(t, false, registro.Bloqueado == false)
 
 }
 func TestNaoBloquearPorSegundosRequisicaoToken(t *testing.T) {
@@ -288,8 +324,10 @@ func TestNaoBloquearPorSegundosRequisicaoToken(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").TotalRequests < requisicaoPorSegundoToken)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.456.879.120").Bloqueado == false)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.456.879.120")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests < requisicaoPorSegundoToken)
+	assert.Equal(t, true, registro.Bloqueado == false)
 
 }
 
@@ -304,8 +342,10 @@ func TestRetornarMensagemTotalRequisicaoPorSegundoExcedida(t *testing.T) {
 		ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 	}
 
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").TotalRequests == requisicaoPorSegundoIP)
-	assert.Equal(t, true, ratelimiter.controlaRateLimit.buscar("175.890.789.123").Bloqueado == true)
+	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.123")
+	assert.Equal(t, true, err == nil)
+	assert.Equal(t, true, registro.TotalRequests == requisicaoPorSegundoIP)
+	assert.Equal(t, true, registro.Bloqueado == true)
 
 	statusCode, err := ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
