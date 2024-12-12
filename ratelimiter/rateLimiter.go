@@ -96,13 +96,13 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	}
 	fmt.Println(ip)
 
-	atualizarIntervaloControle(registro)
+	r.atualizarIntervaloControle(registro)
 
-	bloquearRegistro(registro, requisicaoPorSegundo)
+	r.bloquearRegistro(registro, requisicaoPorSegundo)
 
 	if registro.Bloqueado {
 
-		if token != nil && desbloqueiaRegistro(registro, token) {
+		if token != nil && r.desbloqueiaRegistro(registro, token) {
 			return http.StatusOK, nil
 		} else {
 			r.controlaRateLimit.remover()
@@ -114,13 +114,15 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	return http.StatusOK, nil
 }
 
-func bloquearRegistro(registro *Registro, requisicaoPorSegundo int) {
+func (r *RateLimiter) bloquearRegistro(registro *Registro, requisicaoPorSegundo int) {
 
 	if registro.FinalControle.After(time.Now()) {
 		if registro.TotalRequests < requisicaoPorSegundo {
 			registro.TotalRequests++
+			r.controlaRateLimit.gravar(*registro)
 		} else {
 			registro.Bloqueado = true
+			r.controlaRateLimit.gravar(*registro)
 		}
 	}
 }
@@ -184,19 +186,21 @@ func (r *RateLimiter) InicializarLimpezaToken(intervalo time.Duration) {
 	}()
 }
 
-func desbloqueiaRegistro(registro *Registro, token *Token) bool {
+func (r *RateLimiter) desbloqueiaRegistro(registro *Registro, token *Token) bool {
 	if token.ExpiraEm.After(time.Now()) && registro.FinalControle.Add(time.Second*time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
 		registro.Bloqueado = false
 		registro.TotalRequests = 1
+		r.controlaRateLimit.gravar(*registro)
 		return true
 	}
 	return false
 }
 
-func atualizarIntervaloControle(registro *Registro) {
+func (r *RateLimiter) atualizarIntervaloControle(registro *Registro) {
 	if registro.FinalControle.Before(time.Now().Truncate(time.Second).Add(time.Second*1)) && !registro.Bloqueado {
 		registro.FinalControle = time.Now().Add(time.Second * 1)
 		registro.TotalRequests = 0
+		r.controlaRateLimit.gravar(*registro)
 	}
 }
 

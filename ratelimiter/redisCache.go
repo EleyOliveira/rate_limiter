@@ -21,7 +21,7 @@ func (i *CacheRegistro) gravar(registro Registro) error {
 		return err
 	}
 
-	err = conectarRedis().Set(context.Background(), registro.Id, data, 0).Err()
+	err = conectarRedisBancoIP().Set(context.Background(), registro.Id, data, 0).Err()
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (i *CacheRegistro) gravar(registro Registro) error {
 }
 
 func (i *CacheRegistro) buscar(id string) (*Registro, error) {
-	val, err := conectarRedis().Get(context.Background(), id).Result()
+	val, err := conectarRedisBancoIP().Get(context.Background(), id).Result()
 
 	if err == redis.Nil {
 		return nil, nil
@@ -48,6 +48,28 @@ func (i *CacheRegistro) buscar(id string) (*Registro, error) {
 }
 
 func (i *CacheRegistro) remover() {
+	var cursor uint64
+	var keys []string
+
+	for {
+		keys, cursor, _ = conectarRedisBancoIP().Scan(context.Background(), cursor, "*", 10).Result()
+
+		for _, key := range keys {
+			val, _ := conectarRedisBancoIP().Get(context.Background(), key).Result()
+
+			var registro Registro
+
+			json.Unmarshal([]byte(val), &registro)
+
+			if registro.FinalControle.Add(time.Second * time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
+				conectarRedisBancoIP().Del(context.Background(), registro.Id)
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
 }
 
 func (i *CacheRegistro) gravarToken(token Token) error {
@@ -57,7 +79,7 @@ func (i *CacheRegistro) gravarToken(token Token) error {
 		return err
 	}
 
-	err = conectarRedis().Set(context.Background(), token.Id, data, 0).Err()
+	err = conectarRedisBancoToken().Set(context.Background(), token.Id, data, 0).Err()
 	if err != nil {
 		return err
 	}
@@ -67,7 +89,7 @@ func (i *CacheRegistro) gravarToken(token Token) error {
 
 func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 
-	val, err := conectarRedis().Get(context.Background(), id).Result()
+	val, err := conectarRedisBancoToken().Get(context.Background(), id).Result()
 
 	if err == redis.Nil {
 		return nil, errors.New("Token não encontrado")
@@ -91,14 +113,47 @@ func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 }
 
 func (i *CacheRegistro) removerToken() {
+	var cursor uint64
+	var keys []string
+
+	for {
+		keys, cursor, _ = conectarRedisBancoToken().Scan(context.Background(), cursor, "*", 10).Result()
+
+		for _, key := range keys {
+			val, _ := conectarRedisBancoToken().Get(context.Background(), key).Result()
+
+			var token Token
+
+			json.Unmarshal([]byte(val), &token)
+
+			if token.ExpiraEm.Before(time.Now()) {
+				conectarRedisBancoToken().Del(context.Background(), token.Id)
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
 }
 
-func conectarRedis() *redis.Client {
+func conectarRedisBancoIP() *redis.Client {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
+	})
+
+	return rdb
+}
+
+func conectarRedisBancoToken() *redis.Client {
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
 	})
 
 	return rdb
