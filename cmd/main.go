@@ -22,21 +22,31 @@ type Configuracao struct {
 func main() {
 
 	configuracao := carregarConfiguracao()
+	cache := &ratelimiter.CacheRegistroSlice{}
+	server := criarServidor(cache, configuracao)
+	err := server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 
-	registro := &ratelimiter.CacheRegistro{}
-	ratelimiter := ratelimiter.NewRateLimiter(registro)
+}
+
+func criarServidor(cache ratelimiter.ControlaCache, config Configuracao) *http.Server {
+
+	ratelimiter := ratelimiter.NewRateLimiter(cache)
 	ratelimiter.InicializarLimpezaRegistro(1 * time.Minute)
 	ratelimiter.InicializarLimpezaToken(1 * time.Minute)
 
-	http.Handle("/", rateLimiterMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.Handle("/", rateLimiterMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Fprintln(w, "Sucesso")
 
-	}), ratelimiter, configuracao))
+	}), ratelimiter, config))
 
-	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 
-		token, err := ratelimiter.GerarToken(configuracao.tempoEmSegundosExpiracaoToken)
+		token, err := ratelimiter.GerarToken(config.tempoEmSegundosExpiracaoToken)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintln(w, err.Error())
@@ -47,7 +57,11 @@ func main() {
 		fmt.Fprintln(w, token)
 	})
 
-	http.ListenAndServe(":8080", nil)
+	return &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+
 }
 
 func carregarConfiguracao() Configuracao {
