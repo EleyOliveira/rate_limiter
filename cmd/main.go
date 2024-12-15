@@ -22,9 +22,13 @@ type Configuracao struct {
 func main() {
 
 	configuracao := carregarConfiguracao()
-	cache := &ratelimiter.CacheRegistro{}
+	cache, err := ratelimiter.ObterCache("redis")
+	if err != nil {
+		panic(err)
+	}
+
 	server := criarServidor(cache, configuracao)
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	if err != nil {
 		panic(err)
 	}

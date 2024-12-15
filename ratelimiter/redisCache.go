@@ -10,12 +10,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type CacheRegistro struct {
+type CacheRedis struct {
 	Registros []*Registro
 	Tokens    []*Token
 }
 
-func (i *CacheRegistro) gravar(registro Registro) error {
+func (i *CacheRedis) gravar(registro Registro) error {
 
 	data, err := json.Marshal(registro)
 	if err != nil {
@@ -29,7 +29,7 @@ func (i *CacheRegistro) gravar(registro Registro) error {
 	return nil
 }
 
-func (i *CacheRegistro) buscar(id string) (*Registro, error) {
+func (i *CacheRedis) buscar(id string) (*Registro, error) {
 	val, err := database.ObterRedisClienteIP().Get(context.Background(), id).Result()
 
 	if err == redis.Nil {
@@ -48,7 +48,7 @@ func (i *CacheRegistro) buscar(id string) (*Registro, error) {
 	return &registro, nil
 }
 
-func (i *CacheRegistro) remover() {
+func (i *CacheRedis) remover() {
 	var cursor uint64
 	var keys []string
 
@@ -75,7 +75,7 @@ func (i *CacheRegistro) remover() {
 	}
 }
 
-func (i *CacheRegistro) gravarToken(token Token) error {
+func (i *CacheRedis) gravarToken(token Token) error {
 
 	data, err := json.Marshal(token)
 	if err != nil {
@@ -90,7 +90,7 @@ func (i *CacheRegistro) gravarToken(token Token) error {
 	return nil
 }
 
-func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
+func (i *CacheRedis) buscarToken(id string) (*Token, error) {
 
 	val, err := database.ObterRedisClienteToken().Get(context.Background(), id).Result()
 
@@ -115,7 +115,7 @@ func (i *CacheRegistro) buscarToken(id string) (*Token, error) {
 	return &token, nil
 }
 
-func (i *CacheRegistro) removerToken() {
+func (i *CacheRedis) removerToken() {
 	var cursor uint64
 	var keys []string
 
