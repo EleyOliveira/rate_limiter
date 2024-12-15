@@ -22,7 +22,7 @@ type Configuracao struct {
 func main() {
 
 	configuracao := carregarConfiguracao()
-	cache := &ratelimiter.CacheRegistroSlice{}
+	cache := &ratelimiter.CacheRegistro{}
 	server := criarServidor(cache, configuracao)
 	err := server.ListenAndServe()
 	if err != nil {
