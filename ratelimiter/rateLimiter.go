@@ -53,8 +53,17 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 	if tokenRequest != "" {
 		var err error
 		token, err = r.controlaRateLimit.buscarToken(tokenRequest)
+
 		if err != nil {
 			return http.StatusInternalServerError, err
+		}
+
+		if token == nil {
+			return http.StatusUnauthorized, errors.New("Token não encontrado")
+		}
+
+		if token.ExpiraEm.Before(time.Now()) {
+			return http.StatusUnauthorized, errors.New("Token expirado")
 		}
 
 		requisicaoPorSegundo = requisicoesPorSegundoToken
@@ -104,9 +113,11 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 
 		if token != nil && r.desbloqueiaRegistro(registro, token) {
 			return http.StatusOK, nil
-		} else {
-			r.controlaRateLimit.remover()
 		}
+		/*else
+		{
+			r.controlaRateLimit.remover()
+		}*/
 
 		return http.StatusTooManyRequests, errors.New("you have reached the maximum number of requests or actions allowed within a certain time frame")
 	}
@@ -204,14 +215,41 @@ func (r *RateLimiter) atualizarIntervaloControle(registro *Registro) {
 	}
 }
 
-func (r *RateLimiter) removerRegistro() {
+func (r *RateLimiter) removerRegistro() error {
 	mutex.Lock()
 	defer mutex.Unlock()
-	r.controlaRateLimit.remover()
+
+	registros, err := r.controlaRateLimit.buscarTodos()
+	if err != nil {
+		return err
+	}
+
+	var ids []string
+	for _, item := range registros {
+		if item.FinalControle.Add(time.Second * time.Duration(item.TempoBloqueado)).Before(time.Now()) {
+			ids = append(ids, item.Id)
+		}
+	}
+	r.controlaRateLimit.remover(ids)
+	return nil
+
 }
 
 func (r *RateLimiter) removerToken() {
 	mutex.Lock()
 	defer mutex.Unlock()
-	r.controlaRateLimit.removerToken()
+
+	tokens, err := r.controlaRateLimit.buscarTokenTodos()
+	if err != nil {
+		return
+	}
+
+	var ids []string
+	for _, item := range tokens {
+		if item.ExpiraEm.Before(time.Now()) {
+			ids = append(ids, item.Id)
+		}
+	}
+
+	r.controlaRateLimit.removerToken(ids)
 }

@@ -16,7 +16,7 @@ const tempoSegundosBloqueadoToken = 180
 const tempoSegundosExpiracaoToken = 300
 
 func inicializarRateLimiter() RateLimiter {
-	cache, err := ObterCache("redis")
+	cache, err := ObterCache("slice")
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +117,9 @@ func TestRemoverRegistroAposTempoBloqueio(t *testing.T) {
 
 	timeFake.Do()
 
-	ratelimiter.controlaRateLimit.remover()
+	ratelimiter.InicializarLimpezaRegistro(1 * time.Second)
+	time.Sleep(2 * time.Second)
+
 	registroIncluido, err = ratelimiter.controlaRateLimit.buscar("175.890.789.131")
 	assert.Equal(t, true, err == nil)
 	assert.Equal(t, true, registroIncluido == nil)
@@ -131,7 +133,8 @@ func TestNaoRemoverRegistroAntesTempoBloqueio(t *testing.T) {
 
 	ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	ratelimiter.controlaRateLimit.remover()
+	ratelimiter.InicializarLimpezaRegistro(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	registro, err := ratelimiter.controlaRateLimit.buscar("175.890.789.132")
 	assert.Equal(t, true, err == nil)
@@ -165,9 +168,10 @@ func TestRetornarMensagemParaTokenExpirado(t *testing.T) {
 
 	timeFake.Do()
 
-	tokenGravado, err := ratelimiter.controlaRateLimit.buscarToken(token)
+	req := inicializarRequestTesteComToken("175.456.879.120", "3421", token)
+	codigo, err := ratelimiter.Controlar(&req, requisicaoPorSegundoIP, requisicaoPorSegundoToken, tempoSegundosBloqueadoIP, tempoSegundosBloqueadoToken, tempoSegundosExpiracaoToken)
 
-	assert.Equal(t, true, tokenGravado == nil)
+	assert.Equal(t, true, codigo == http.StatusUnauthorized)
 	assert.Equal(t, true, err.Error() == "Token expirado")
 }
 
@@ -188,11 +192,12 @@ func TestRemoverToken(t *testing.T) {
 
 	timeFake.Do()
 
-	ratelimiter.controlaRateLimit.removerToken()
-	tokenRemovido, err := ratelimiter.controlaRateLimit.buscarToken(token)
+	ratelimiter.InicializarLimpezaToken(1 * time.Second)
+	time.Sleep(2 * time.Second)
+
+	tokenRemovido, _ := ratelimiter.controlaRateLimit.buscarToken(token)
 
 	assert.Equal(t, true, tokenRemovido == nil)
-	assert.Equal(t, true, err.Error() == "Token não encontrado")
 
 }
 

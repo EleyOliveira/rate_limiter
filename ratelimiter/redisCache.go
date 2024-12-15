@@ -3,8 +3,6 @@ package ratelimiter
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"time"
 
 	"github.com/EleyOliveira/rate_limiter/internal/infra/database"
 	"github.com/redis/go-redis/v9"
@@ -48,7 +46,8 @@ func (i *CacheRedis) buscar(id string) (*Registro, error) {
 	return &registro, nil
 }
 
-func (i *CacheRedis) remover() {
+func (i *CacheRedis) buscarTodos() ([]*Registro, error) {
+
 	var cursor uint64
 	var keys []string
 
@@ -64,14 +63,23 @@ func (i *CacheRedis) remover() {
 
 			json.Unmarshal([]byte(val), &registro)
 
-			if registro.FinalControle.Add(time.Second * time.Duration(registro.TempoBloqueado)).Before(time.Now()) {
-				cliente.Del(context.Background(), registro.Id)
-			}
+			i.Registros = append(i.Registros, &registro)
 		}
 
 		if cursor == 0 {
 			break
 		}
+	}
+
+	return i.Registros, nil
+}
+
+func (i *CacheRedis) remover(ids []string) {
+
+	cliente := database.ObterRedisClienteIP()
+
+	for _, id := range ids {
+		cliente.Del(context.Background(), id)
 	}
 }
 
@@ -95,7 +103,7 @@ func (i *CacheRedis) buscarToken(id string) (*Token, error) {
 	val, err := database.ObterRedisClienteToken().Get(context.Background(), id).Result()
 
 	if err == redis.Nil {
-		return nil, errors.New("Token não encontrado")
+		return nil, nil
 	}
 
 	if err != nil {
@@ -108,14 +116,10 @@ func (i *CacheRedis) buscarToken(id string) (*Token, error) {
 		return nil, err
 	}
 
-	if token.ExpiraEm.Before(time.Now()) {
-		return nil, errors.New("Token expirado")
-	}
-
 	return &token, nil
 }
 
-func (i *CacheRedis) removerToken() {
+func (i *CacheRedis) buscarTokenTodos() ([]*Token, error) {
 	var cursor uint64
 	var keys []string
 
@@ -131,13 +135,22 @@ func (i *CacheRedis) removerToken() {
 
 			json.Unmarshal([]byte(val), &token)
 
-			if token.ExpiraEm.Before(time.Now()) {
-				cliente.Del(context.Background(), token.Id)
-			}
+			i.Tokens = append(i.Tokens, &token)
 		}
 
 		if cursor == 0 {
 			break
 		}
+	}
+
+	return i.Tokens, nil
+}
+
+func (i *CacheRedis) removerToken(ids []string) {
+
+	cliente := database.ObterRedisClienteToken()
+
+	for _, id := range ids {
+		cliente.Del(context.Background(), id)
 	}
 }

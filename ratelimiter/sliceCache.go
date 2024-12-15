@@ -1,10 +1,5 @@
 package ratelimiter
 
-import (
-	"errors"
-	"time"
-)
-
 type CacheSlice struct {
 	Registros []*Registro
 	Tokens    []*Token
@@ -26,10 +21,22 @@ func (i *CacheSlice) buscar(id string) (*Registro, error) {
 	return nil, nil
 }
 
-func (i *CacheSlice) remover() {
+func (i *CacheSlice) buscarTodos() ([]*Registro, error) {
+	return i.Registros, nil
+}
+
+func (i *CacheSlice) remover(ids []string) {
 	var registros []*Registro
 	for _, item := range i.Registros {
-		if item.FinalControle.Add(time.Second * time.Duration(item.TempoBloqueado)).After(time.Now()) {
+		contains := func(s []string, str string) bool {
+			for _, v := range s {
+				if v == str {
+					return true
+				}
+			}
+			return false
+		}
+		if !contains(ids, item.Id) {
 			registros = append(registros, item)
 		}
 	}
@@ -46,20 +53,28 @@ func (i *CacheSlice) gravarToken(token Token) error {
 func (i *CacheSlice) buscarToken(id string) (*Token, error) {
 	for _, item := range i.Tokens {
 		if item.Id == id {
-			if item.ExpiraEm.Before(time.Now()) {
-				return nil, errors.New("Token expirado")
-			}
-
 			return item, nil
 		}
 	}
-	return nil, errors.New("Token não encontrado")
+	return nil, nil
 }
 
-func (i *CacheSlice) removerToken() {
+func (i *CacheSlice) buscarTokenTodos() ([]*Token, error) {
+	return i.Tokens, nil
+}
+
+func (i *CacheSlice) removerToken(ids []string) {
 	var tokens []*Token
 	for _, item := range i.Tokens {
-		if item.ExpiraEm.After(time.Now()) {
+		contains := func(s []string, str string) bool {
+			for _, v := range s {
+				if v == str {
+					return true
+				}
+			}
+			return false
+		}
+		if !contains(ids, item.Id) {
 			tokens = append(tokens, item)
 		}
 	}
