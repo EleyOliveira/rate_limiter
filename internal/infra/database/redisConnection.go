@@ -14,7 +14,7 @@ var onceClienteToken sync.Once
 func ObterRedisClienteIP() *redis.Client {
 	onceClienteIP.Do(func() {
 		redisClienteIP = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     "redis:6379",
 			Password: "",
 			DB:       0,
 		})
@@ -25,7 +25,7 @@ func ObterRedisClienteIP() *redis.Client {
 func ObterRedisClienteToken() *redis.Client {
 	onceClienteToken.Do(func() {
 		redisClienteToken = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     "redis:6379",
 			Password: "",
 			DB:       1,
 		})

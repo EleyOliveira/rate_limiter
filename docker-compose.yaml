@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  redis:
+    image: redis
+    container_name: redis
+    expose:
+      - "6379"    
+    networks:
+      - ratelimiter
+
+  app:
+    build: .
+    depends_on:
+      - redis    
+    ports:
+      - "8080:8080"      
+    networks:
+      - ratelimiter
+
+networks:
+  ratelimiter:
+    driver: bridge

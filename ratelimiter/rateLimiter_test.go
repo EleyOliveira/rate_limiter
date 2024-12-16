@@ -16,7 +16,7 @@ const tempoSegundosBloqueadoToken = 180
 const tempoSegundosExpiracaoToken = 300
 
 func inicializarRateLimiter() RateLimiter {
-	cache, err := ObterCache("slice")
+	cache, err := ObterCache("redis")
 	if err != nil {
 		panic(err)
 	}
