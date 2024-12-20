@@ -2,7 +2,6 @@ package ratelimiter
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -96,14 +95,6 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 
 		return http.StatusOK, nil
 	}
-	fmt.Println(registro.FinalControle)
-	fmt.Println(time.Now().Truncate(time.Second).Add(time.Second * 1))
-	fmt.Println(registro.Bloqueado)
-	fmt.Println(registro.TotalRequests)
-	if token != nil {
-		fmt.Println(token.Id)
-	}
-	fmt.Println(ip)
 
 	r.atualizarIntervaloControle(registro)
 
@@ -114,10 +105,6 @@ func (r *RateLimiter) Controlar(request *http.Request, requisicoesPorSegundoIP i
 		if token != nil && r.desbloqueiaRegistro(registro, token) {
 			return http.StatusOK, nil
 		}
-		/*else
-		{
-			r.controlaRateLimit.remover()
-		}*/
 
 		return http.StatusTooManyRequests, errors.New("you have reached the maximum number of requests or actions allowed within a certain time frame")
 	}

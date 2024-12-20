@@ -4,8 +4,8 @@ services:
   redis:
     image: redis
     container_name: redis
-    expose:
-      - "6379"    
+    ports:
+      - "6379:6379"    
     networks:
       - ratelimiter
 
@@ -16,7 +16,7 @@ services:
     ports:
       - "8080:8080"      
     networks:
-      - ratelimiter
+      - ratelimiter 
 
 networks:
   ratelimiter:
